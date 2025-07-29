@@ -504,7 +504,7 @@ class TransformerTrainer:
             plt.show()
         plt.close()
 
-        # print error percentage statistics
+        # print sMAPE statistics
         print(f"sMAPE Statistics:")
         print(f" Mean: {sMAPE.mean():.2f}%")
         print(f" Std:  {sMAPE.std():.2f}%")
