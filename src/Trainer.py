@@ -223,6 +223,10 @@ class TransformerTrainer:
         return self.train_losses, self.val_losses
     
 
+    def sMAPE(self, y_true, y_pred):
+        """計算sMAPE"""
+        return 2.0 * np.mean(np.abs(y_pred - y_true) / (np.abs(y_pred) + np.abs(y_true))) * 100
+
     def plot_summary(self):
 
         self.plot_training_history()
@@ -230,6 +234,7 @@ class TransformerTrainer:
         self.plot_perfect_prediction()
         self.plot_attention_weights()
         self.plot_error_percentage_summary()
+        self.plot_sMAPE_summary()
 
     def plot_predictions(self):
         """繪製預測結果與實際值折線圖並儲存"""
@@ -447,6 +452,62 @@ class TransformerTrainer:
         print(f" Std:  {error_percentage.std():.2f}%")
         print(f" Max:  {error_percentage.max():.2f}%")
         print(f" Min:  {error_percentage.min():.2f}%")
+
+    def plot_sMAPE_summary(self):
+        """
+        plot 實際值與預測值的sMAPE折線圖(1)和直方圖(2)
+        """
+        self.model.eval()
+        all_targets = []
+        all_predictions = []
+        with torch.no_grad():
+            for inputs, targets in self.val_loader:
+                inputs = inputs.float().to(self.device)
+                targets = targets.float().to(self.device)
+                predictions = self.model(inputs)
+                all_targets.append(targets.cpu().numpy())
+                all_predictions.append(predictions.cpu().numpy())
+
+        all_targets = np.concatenate(all_targets, axis=0).flatten()
+        all_predictions = np.concatenate(all_predictions, axis=0).flatten()
+
+        # calculate sMAPE
+        sMAPE = self.sMAPE(all_targets, all_predictions)
+
+        # 1.折線圖
+        plt.figure(figsize=(12, 6))
+        plt.plot(sMAPE, color='purple', alpha=0.6, label='sMAPE')
+        plt.axhline(0, color='gray', linestyle='--', linewidth=1)
+        plt.title('Prediction Error Percentage on Validation Set')
+        plt.xlabel('Sample Index')
+        plt.ylabel('Error (%)')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.save_dir, 'sMAPE_line.png'))
+        if self.show_plot:
+            plt.show()
+        plt.close()
+
+        # 2.直方圖
+        plt.figure(figsize=(8, 6))
+        plt.hist(sMAPE, bins=100, color='orange', alpha=0.7, edgecolor='black')
+        plt.title('Prediction Error Percentage Distribution')
+        plt.xlabel('Error (%)')
+        plt.ylabel('Frequency')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.save_dir, 'sMAPE_histogram.png'))
+        if self.show_plot:
+            plt.show()
+        plt.close()
+
+        # print error percentage statistics
+        print(f"sMAPE Statistics:")
+        print(f" Mean: {sMAPE.mean():.2f}%")
+        print(f" Std:  {sMAPE.std():.2f}%")
+        print(f" Max:  {sMAPE.max():.2f}%")
+        print(f" Min:  {sMAPE.min():.2f}%")
 
     def load_model(self, path):
         """加載模型"""
