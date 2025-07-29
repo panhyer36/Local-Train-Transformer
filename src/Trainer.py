@@ -225,7 +225,9 @@ class TransformerTrainer:
 
     def sMAPE(self, y_true, y_pred):
         """計算sMAPE"""
-        return 2.0 * np.mean(np.abs(y_pred - y_true) / (np.abs(y_pred) + np.abs(y_true))) * 100
+        if y_true == 0 and y_pred == 0:
+            return 0
+        return 2 * np.abs(y_pred - y_true) / (np.abs(y_pred) + np.abs(y_true)) * 100
 
     def plot_summary(self):
 
@@ -475,14 +477,15 @@ class TransformerTrainer:
         sMAPE = []
         for i in range(len(all_targets)):
             sMAPE.append(self.sMAPE(all_targets[i], all_predictions[i]))
+        sMAPE = np.array(sMAPE)
 
         # 1.折線圖
         plt.figure(figsize=(12, 6))
         plt.plot(sMAPE, color='purple', alpha=0.6, label='sMAPE')
         plt.axhline(0, color='gray', linestyle='--', linewidth=1)
-        plt.title('Prediction Error Percentage on Validation Set')
+        plt.title('sMAPE on Validation Set')
         plt.xlabel('Sample Index')
-        plt.ylabel('Error (%)')
+        plt.ylabel('sMAPE (%)')
         plt.grid(True, alpha=0.3)
         plt.legend()
         plt.tight_layout()
@@ -494,8 +497,8 @@ class TransformerTrainer:
         # 2.直方圖
         plt.figure(figsize=(8, 6))
         plt.hist(sMAPE, bins=100, color='orange', alpha=0.7, edgecolor='black')
-        plt.title('Prediction Error Percentage Distribution')
-        plt.xlabel('Error (%)')
+        plt.title('sMAPE Distribution')
+        plt.xlabel('sMAPE (%)')
         plt.ylabel('Frequency')
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
