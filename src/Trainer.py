@@ -472,7 +472,9 @@ class TransformerTrainer:
         all_predictions = np.concatenate(all_predictions, axis=0).flatten()
 
         # calculate sMAPE
-        sMAPE = self.sMAPE(all_targets, all_predictions)
+        sMAPE = []
+        for i in range(len(all_targets)):
+            sMAPE.append(self.sMAPE(all_targets[i], all_predictions[i]))
 
         # 1.折線圖
         plt.figure(figsize=(12, 6))
