@@ -1,0 +1,20 @@
+# 深度學習框架
+torch>=2.0.0
+torchvision>=0.15.0
+
+# 數據處理和數值計算
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.1.0
+
+# 可視化
+matplotlib>=3.5.0
+
+# 系統監控
+psutil>=5.9.0
+
+# 配置管理
+pyyaml>=6.0
+
+# 進度條
+tqdm>=4.64.0

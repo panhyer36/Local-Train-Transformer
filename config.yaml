@@ -1,0 +1,93 @@
+# 模型配置
+model:
+  feature_dim: 25  # 輸入特徵維度
+  d_model: 256     # Transformer隱藏層維度
+  nhead: 8         # 多頭注意力頭數
+  num_layers: 4    # Transformer層數
+  output_dim: 1    # 輸出維度
+  max_seq_length: 1000  # 最大序列長度
+  dropout: 0.1     # Dropout比率
+
+# 數據配置
+data:
+  seq_len: 96      # 輸入序列長度
+  target_len: 1    # 目標序列長度
+  data_dir: "data/processed"  # 數據目錄
+  normalize: true  # 是否標準化數據
+  scaler_type: "minmax"  # 標準化方式: minmax, standard
+  features:        # 可選：指定使用的特徵列
+    - AC1
+    - AC2
+    - AC3
+    - AC4
+    - Dish washer
+    - Washing Machine
+    - Dryer
+    - Water heater
+    - TV
+    - Microwave
+    - Kettle
+    - Lighting
+    - Refrigerator
+    - Consumption_Total
+    - Generation_Total
+    - TemperatureC
+    - DewpointC
+    - PressurePa
+    - WindSpeedKMH
+    - WindSpeedGustKMH
+    - Humidity
+    - HourlyPrecipMM
+    - dailyrainMM
+    - SolarRadiationWatts_m2
+    - Power_Demand
+  target_feature: "Power_Demand"  # 目標特徵
+
+# 訓練配置
+training:
+  batch_size: 32
+  learning_rate: 0.0001
+  train_ratio: 0.8
+  num_epochs: 100
+  early_stopping_patience: 15
+  weight_decay: 0.00001
+  grad_clip_norm: 1.0
+  
+  # 學習率調度器
+  scheduler:
+    type: "ReduceLROnPlateau"  # ReduceLROnPlateau, StepLR, CosineAnnealingLR
+    factor: 0.5
+    patience: 5
+    mode: "min"
+
+# 設備配置
+device:
+  auto_select: true  # 自動選擇最佳設備
+  preferred: "cuda"  # 首選設備: cuda, mps, cpu
+  
+# 輸出配置
+output:
+  save_dir: "runs"
+  show_plots: false
+  save_plots: true
+  
+# 日誌配置
+logging:
+  tensorboard: false
+  log_dir: "logs"
+  console_log_level: "INFO"
+  
+# 客戶端配置
+clients:
+  consumers:
+    start: 1
+    end: 50
+    format: "Consumer_{:02d}"
+  public_building:
+    name: "Public_Building"
+    
+# 實驗配置
+experiment:
+  name: "transformer_timeseries"
+  version: "v1.0"
+  description: "基於Transformer的時間序列預測模型"
