@@ -33,7 +33,7 @@ data:
     - Generation_Total
     - TemperatureC
     - DewpointC
-    - PressurePa
+    - PressurehPa
     - WindSpeedKMH
     - WindSpeedGustKMH
     - Humidity
