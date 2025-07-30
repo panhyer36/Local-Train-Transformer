@@ -3,6 +3,24 @@ from src.DataLoader import SequenceCSVDataset, create_sequential_datasets
 from src.Model import TransformerModel
 from src.Trainer import TransformerTrainer
 from config import load_config
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+def send_message(message):
+    if os.getenv('HOST_LINK') is None:
+        return
+    url = os.getenv('HOST_LINK')
+    name = os.getenv('NAME')
+    payload = {
+        "name": name,
+        "message": message
+    }
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        print(f"Error sending message: {e}")
 
 def train(file_path, file_name, config):
     # 創建儲存目錄
@@ -68,7 +86,7 @@ def main():
     print(f"實驗描述: {config.experiment.description}")
     print(f"總共需要訓練 51 個模型 (Consumer_01 到 Consumer_50 + Public_Building)")
     print()
-    
+    send_message("開始訓練")
     # 訓練消費者模型
     consumers_config = config.clients.consumers
     for i in range(consumers_config['start'], consumers_config['end'] + 1):
@@ -76,6 +94,7 @@ def main():
         file_path = os.path.join(config.data.data_dir, f"{formatted_number}.csv")
         
         print(f"[{i}/51] 開始訓練 {formatted_number}")
+        send_message(f"[{i}/51] 開始訓練 {formatted_number}")
         try:
             train(file_path, formatted_number, config)
             print(f"[{i}/51] {formatted_number} 訓練完成")
@@ -88,6 +107,7 @@ def main():
     public_building_path = os.path.join(config.data.data_dir, f"{public_building_name}.csv")
     
     print(f"[51/51] 開始訓練 {public_building_name}")
+    send_message(f"[51/51] 開始訓練 {public_building_name}")
     try:
         train(public_building_path, public_building_name, config)
         print(f"[51/51] {public_building_name} 訓練完成")
@@ -95,6 +115,6 @@ def main():
         print(f"[51/51] {public_building_name} 訓練失敗: {e}")
     print()
     print("=== 所有訓練完成 ===")
-
+    send_message("訓練完成")
 if __name__ == "__main__":
     main()
