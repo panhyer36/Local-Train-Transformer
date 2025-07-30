@@ -10,9 +10,10 @@ def train(file_path, file_name, config):
     os.makedirs(save_dir, exist_ok=True)
     
     # 直接從文件計算拆分索引，避免創建臨時數據集
-    train_indices, val_indices = create_sequential_datasets(
+    train_indices, val_indices, test_indices = create_sequential_datasets(
         file_path, 
         config.training.train_ratio,
+        config.training.val_ratio,
         config.data.seq_len,
         config.data.target_len
     )
@@ -43,11 +44,12 @@ def train(file_path, file_name, config):
         config=config,
         save_dir=save_dir,
         train_indices=train_indices,
-        val_indices=val_indices
+        val_indices=val_indices,
+        test_indices=test_indices
     )
 
     # 開始訓練
-    train_losses, val_losses = trainer.train(
+    trainer.train(
         num_epochs=config.training.num_epochs,
         save_path=os.path.join(save_dir, "transformer_model.pth"),
         early_stopping_patience=config.training.early_stopping_patience,

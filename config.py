@@ -39,6 +39,7 @@ class TrainingConfig:
     batch_size: int = 32
     learning_rate: float = 1e-4
     train_ratio: float = 0.8
+    val_ratio: float = 0.1
     num_epochs: int = 100
     early_stopping_patience: int = 10
     weight_decay: float = 1e-5
@@ -205,6 +206,7 @@ def save_config(config: Config, config_path: str = "config.yaml"):
             'batch_size': config.training.batch_size,
             'learning_rate': config.training.learning_rate,
             'train_ratio': config.training.train_ratio,
+            'val_ratio': config.training.val_ratio,
             'num_epochs': config.training.num_epochs,
             'early_stopping_patience': config.training.early_stopping_patience,
             'weight_decay': config.training.weight_decay,

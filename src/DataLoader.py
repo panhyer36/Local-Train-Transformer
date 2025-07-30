@@ -1,9 +1,8 @@
 import os
-import glob
 import pandas as pd
 import numpy as np
 import pickle
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import psutil
 
@@ -216,18 +215,19 @@ class SequenceCSVDataset(Dataset):
         return input_seq, target
 
 
-def create_sequential_datasets(dataset_or_file, train_ratio=0.8, seq_len=96, target_len=1):
+def create_sequential_datasets(dataset_or_file, train_ratio=0.8, val_ratio=0.1, seq_len=96, target_len=1):
     """
-    將數據集按順序拆分為訓練集和驗證集（適用於時間序列）
+    將數據集按順序拆分為訓練集、驗證集和測試集（適用於時間序列）
     
     Args:
         dataset_or_file: 數據集對象或CSV文件路徑
         train_ratio: 訓練集比例
+        val_ratio: 驗證集比例
         seq_len: 序列長度（當傳入文件路徑時需要）
         target_len: 目標長度（當傳入文件路徑時需要）
     
     Returns:
-        tuple: (train_indices, val_indices)
+        tuple: (train_indices, val_indices, test_indices)
     """
     # 如果傳入的是字符串（文件路徑），直接從文件計算序列數量
     if isinstance(dataset_or_file, str):
@@ -245,13 +245,21 @@ def create_sequential_datasets(dataset_or_file, train_ratio=0.8, seq_len=96, tar
         # 如果傳入的是數據集對象，使用其長度
         total_size = len(dataset_or_file)
     
+    # 檢查比例總和是否合理
+    if train_ratio + val_ratio > 1.0:
+        raise ValueError(f"train_ratio ({train_ratio}) + val_ratio ({val_ratio}) = {train_ratio + val_ratio} > 1.0")
+    
     train_size = int(train_ratio * total_size)
+    val_size = int(val_ratio * total_size)
     
-    # 順序拆分：前train_size個作為訓練集，其餘作為驗證集
+    # 順序拆分：前train_size個作為訓練集，中間val_size個作為驗證集，剩餘作為測試集
     train_indices = list(range(train_size))
-    val_indices = list(range(train_size, total_size))
+    val_indices = list(range(train_size, train_size + val_size))
+    test_indices = list(range(train_size + val_size, total_size))
     
-    print(f"順序拆分: 訓練集 {len(train_indices)} 個序列, 驗證集 {len(val_indices)} 個序列")
+    print(f"順序拆分: 訓練集 {len(train_indices)} 個序列 ({train_ratio*100:.1f}%), "
+          f"驗證集 {len(val_indices)} 個序列 ({val_ratio*100:.1f}%), "
+          f"測試集 {len(test_indices)} 個序列 ({(1-train_ratio-val_ratio)*100:.1f}%)")
     
-    return train_indices, val_indices
+    return train_indices, val_indices, test_indices
 

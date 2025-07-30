@@ -22,7 +22,7 @@ class TransformerTrainer:
             return torch.device('cpu')
     
     def __init__(self, model, dataset, train_ratio=0.8, batch_size=32, 
-                 learning_rate=1e-4, device=None, show_plot=True, config=None, save_dir=".", train_indices=None, val_indices=None):
+                 learning_rate=1e-4, device=None, show_plot=True, config=None, save_dir=".", train_indices=None, val_indices=None, test_indices=None):
         """
         初始化訓練器
         
@@ -38,6 +38,7 @@ class TransformerTrainer:
             save_dir: 圖像和模型儲存目錄
             train_indices: 訓練集索引
             val_indices: 驗證集索引
+            test_indices: 測試集索引
         """
         self.model = model
         self.config = config
@@ -51,7 +52,12 @@ class TransformerTrainer:
             # 使用提供的索引
             self.train_dataset = Subset(dataset, train_indices)
             self.val_dataset = Subset(dataset, val_indices)
-            print(f"使用提供的索引: 訓練集 {len(train_indices)} 個序列, 驗證集 {len(val_indices)} 個序列")
+            if test_indices is not None:
+                self.test_dataset = Subset(dataset, test_indices)
+                print(f"使用提供的索引: 訓練集 {len(train_indices)} 個序列, 驗證集 {len(val_indices)} 個序列, 測試集 {len(test_indices)} 個序列")
+            else:
+                self.test_dataset = None
+                print(f"使用提供的索引: 訓練集 {len(train_indices)} 個序列, 驗證集 {len(val_indices)} 個序列")
         else:
             # 使用順序拆分（時間序列數據的正確方式）
             total_size = len(dataset)
@@ -62,6 +68,7 @@ class TransformerTrainer:
             
             self.train_dataset = Subset(dataset, train_indices)
             self.val_dataset = Subset(dataset, val_indices)
+            self.test_dataset = None
             print(f"順序拆分: 訓練集 {len(train_indices)} 個序列, 驗證集 {len(val_indices)} 個序列")
         
         # 創建數據加載器
@@ -73,6 +80,13 @@ class TransformerTrainer:
             self.val_dataset, batch_size=batch_size, 
             shuffle=False, num_workers=0
         )
+        if self.test_dataset is not None:
+            self.test_loader = DataLoader(
+                self.test_dataset, batch_size=batch_size, 
+                shuffle=False, num_workers=0
+            )
+        else:
+            self.test_loader = None
         
         # 設置優化器和損失函數
         self.optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
@@ -243,8 +257,14 @@ class TransformerTrainer:
         self.model.eval()
         all_targets = []
         all_predictions = []
+        
+        # 優先使用測試集，如果沒有測試集則使用驗證集
+        data_loader = self.test_loader if self.test_loader is not None else self.val_loader
+        dataset_name = "Test Set" if self.test_loader is not None else "Validation Set"
+        filename = "test_predictions.png" if self.test_loader is not None else "val_predictions.png"
+        
         with torch.no_grad():
-            for inputs, targets in self.val_loader:
+            for inputs, targets in data_loader:
                 inputs = inputs.float().to(self.device)
                 targets = targets.float().to(self.device)
                 predictions = self.model(inputs)  # 直接輸出(batch_size, 1)
@@ -256,13 +276,13 @@ class TransformerTrainer:
         plt.figure(figsize=(12, 6))
         plt.plot(all_targets, label='Actual Power Demand', color='blue')
         plt.plot(all_predictions, label='Predicted Power Demand', color='orange')
-        plt.title('Validation Set: Predicted vs. Actual Power Demand')
+        plt.title(f'{dataset_name}: Predicted vs. Actual Power Demand')
         plt.xlabel('Sample Index')
         plt.ylabel('Power_Demand')
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'val_predictions.png'))
+        plt.savefig(os.path.join(self.save_dir, filename))
         if self.show_plot:
             plt.show()
         plt.close()
@@ -272,8 +292,14 @@ class TransformerTrainer:
         self.model.eval()
         all_targets = []
         all_predictions = []
+        
+        # 優先使用測試集，如果沒有測試集則使用驗證集
+        data_loader = self.test_loader if self.test_loader is not None else self.val_loader
+        dataset_name = "Test Set" if self.test_loader is not None else "Validation Set"
+        filename = "test_perfect_prediction.png" if self.test_loader is not None else "perfect_prediction.png"
+        
         with torch.no_grad():
-            for inputs, targets in self.val_loader:
+            for inputs, targets in data_loader:
                 inputs = inputs.float().to(self.device)
                 targets = targets.float().to(self.device)
                 predictions = self.model(inputs)  # 直接輸出(batch_size, 1)
@@ -287,13 +313,13 @@ class TransformerTrainer:
         min_val = min(all_targets.min(), all_predictions.min())
         max_val = max(all_targets.max(), all_predictions.max())
         plt.plot([min_val, max_val], [min_val, max_val], color='red', linestyle='--', label='Perfect Prediction Line')
-        plt.title('Predicted vs. Actual (Perfect Prediction Line)')
+        plt.title(f'{dataset_name}: Predicted vs. Actual (Perfect Prediction Line)')
         plt.xlabel('Actual Power Demand')
         plt.ylabel('Predicted Power Demand')
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'perfect_prediction.png'))
+        plt.savefig(os.path.join(self.save_dir, filename))
         if self.show_plot:
             plt.show()
         plt.close()
@@ -406,8 +432,14 @@ class TransformerTrainer:
         self.model.eval()
         all_targets = []
         all_predictions = []
+        
+        # 優先使用測試集，如果沒有測試集則使用驗證集
+        data_loader = self.test_loader if self.test_loader is not None else self.val_loader
+        dataset_name = "Test Set" if self.test_loader is not None else "Validation Set"
+        filename_prefix = "test" if self.test_loader is not None else "val"
+        
         with torch.no_grad():
-            for inputs, targets in self.val_loader:
+            for inputs, targets in data_loader:
                 inputs = inputs.float().to(self.device)
                 targets = targets.float().to(self.device)
                 predictions = self.model(inputs)
@@ -424,13 +456,13 @@ class TransformerTrainer:
         plt.figure(figsize=(12, 6))
         plt.plot(error_percentage, color='purple', alpha=0.6, label='Error Percentage')
         plt.axhline(0, color='gray', linestyle='--', linewidth=1)
-        plt.title('Prediction Error Percentage on Validation Set')
+        plt.title(f'Prediction Error Percentage on {dataset_name}')
         plt.xlabel('Sample Index')
         plt.ylabel('Error (%)')
         plt.grid(True, alpha=0.3)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'error_percentage_line.png'))
+        plt.savefig(os.path.join(self.save_dir, f'{filename_prefix}_error_percentage_line.png'))
         if self.show_plot:
             plt.show()
         plt.close()
@@ -438,12 +470,12 @@ class TransformerTrainer:
         # 2.直方圖
         plt.figure(figsize=(8, 6))
         plt.hist(error_percentage, bins=100, color='orange', alpha=0.7, edgecolor='black')
-        plt.title('Prediction Error Percentage Distribution')
+        plt.title(f'Prediction Error Percentage Distribution ({dataset_name})')
         plt.xlabel('Error (%)')
         plt.ylabel('Frequency')
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'error_percentage_histogram.png'))
+        plt.savefig(os.path.join(self.save_dir, f'{filename_prefix}_error_percentage_histogram.png'))
         if self.show_plot:
             plt.show()
         plt.close()
@@ -462,8 +494,14 @@ class TransformerTrainer:
         self.model.eval()
         all_targets = []
         all_predictions = []
+        
+        # 優先使用測試集，如果沒有測試集則使用驗證集
+        data_loader = self.test_loader if self.test_loader is not None else self.val_loader
+        dataset_name = "Test Set" if self.test_loader is not None else "Validation Set"
+        filename_prefix = "test" if self.test_loader is not None else "val"
+        
         with torch.no_grad():
-            for inputs, targets in self.val_loader:
+            for inputs, targets in data_loader:
                 inputs = inputs.float().to(self.device)
                 targets = targets.float().to(self.device)
                 predictions = self.model(inputs)
@@ -483,13 +521,13 @@ class TransformerTrainer:
         plt.figure(figsize=(12, 6))
         plt.plot(sMAPE, color='purple', alpha=0.6, label='sMAPE')
         plt.axhline(0, color='gray', linestyle='--', linewidth=1)
-        plt.title('sMAPE on Validation Set')
+        plt.title(f'sMAPE on {dataset_name}')
         plt.xlabel('Sample Index')
         plt.ylabel('sMAPE (%)')
         plt.grid(True, alpha=0.3)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'sMAPE_line.png'))
+        plt.savefig(os.path.join(self.save_dir, f'{filename_prefix}_sMAPE_line.png'))
         if self.show_plot:
             plt.show()
         plt.close()
@@ -497,12 +535,12 @@ class TransformerTrainer:
         # 2.直方圖
         plt.figure(figsize=(8, 6))
         plt.hist(sMAPE, bins=100, color='orange', alpha=0.7, edgecolor='black')
-        plt.title('sMAPE Distribution')
+        plt.title(f'sMAPE Distribution ({dataset_name})')
         plt.xlabel('sMAPE (%)')
         plt.ylabel('Frequency')
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'sMAPE_histogram.png'))
+        plt.savefig(os.path.join(self.save_dir, f'{filename_prefix}_sMAPE_histogram.png'))
         if self.show_plot:
             plt.show()
         plt.close()
