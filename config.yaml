@@ -14,7 +14,7 @@ data:
   target_len: 1    # 目標序列長度
   data_dir: "data/processed"  # 數據目錄
   normalize: true  # 是否標準化數據
-  scaler_type: "minmax"  # 標準化方式: minmax, standard
+  scaler_type: "standard"  # 標準化方式: minmax, standard
   features:        # 可選：指定使用的特徵列
     - AC1
     - AC2
