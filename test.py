@@ -94,7 +94,7 @@ def plot_summary(file_path, file_name, config):
         train_ratio=config.training.train_ratio,
         batch_size=config.training.batch_size,
         learning_rate=config.training.learning_rate,
-        device="mps",
+        device=None,
         show_plot=config.output.show_plots,
         config=config,
         save_dir=save_dir,

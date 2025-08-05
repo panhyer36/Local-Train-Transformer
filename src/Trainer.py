@@ -570,8 +570,9 @@ class TransformerTrainer:
             checkpoint = torch.load(path, map_location=self.device)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.model.to(self.device)  # 確保模型在正確設備上
             self.model.eval()  # 確保模型處於評估模式
-            print(f"模型從 {path} 加載成功")
+            print(f"模型從 {path} 加載成功，設備: {self.device}")
             return checkpoint
         else:
             print(f"模型文件 {path} 不存在")
