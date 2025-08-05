@@ -273,16 +273,28 @@ class TransformerTrainer:
         all_targets = np.concatenate(all_targets, axis=0).flatten()
         all_predictions = np.concatenate(all_predictions, axis=0).flatten()
 
-        plt.figure(figsize=(12, 6))
-        plt.plot(all_targets, label='Actual Power Demand', color='blue')
-        plt.plot(all_predictions, label='Predicted Power Demand', color='orange')
-        plt.title(f'{dataset_name}: Predicted vs. Actual Power Demand')
-        plt.xlabel('Sample Index')
-        plt.ylabel('Power_Demand')
+        # 使用所有數據點，不進行採樣
+        n_samples = len(all_predictions)
+        
+        # 根據數據量調整圖形尺寸
+        # 數據點越多，圖形越寬，便於觀察細節
+        fig_width = max(15, min(30, n_samples // 100))  # 動態調整寬度，最小15，最大30
+        plt.figure(figsize=(fig_width, 6))
+        
+        # 繪製真實值和預測值
+        plt.plot(range(n_samples), all_targets, 
+                 label='True Values', linewidth=1.0, alpha=0.8)
+        plt.plot(range(n_samples), all_predictions, 
+                 label='Predictions', linewidth=1.0, alpha=0.8)
+        
+        plt.xlabel('Time Steps')
+        plt.ylabel('Values')
+        plt.title(f'Complete Time Series Prediction Comparison - {dataset_name}')
         plt.legend()
-        plt.grid(True)
+        plt.grid(True, alpha=0.3)
+        
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, filename))
+        plt.savefig(os.path.join(self.save_dir, filename), dpi=300, bbox_inches='tight')
         if self.show_plot:
             plt.show()
         plt.close()
@@ -558,6 +570,7 @@ class TransformerTrainer:
             checkpoint = torch.load(path, map_location=self.device)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.model.eval()  # 確保模型處於評估模式
             print(f"模型從 {path} 加載成功")
             return checkpoint
         else:

@@ -73,8 +73,6 @@ def train(file_path, file_name, config):
         early_stopping_patience=config.training.early_stopping_patience,
     )
 
-    # 繪製訓練歷史
-    trainer.plot_summary()
 
 def main():
     # 加載配置
